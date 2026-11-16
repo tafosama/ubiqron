@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ubiqron diagram samples</title>
+<style>
+  :root { --bg:#f6f8f6; --fg:#1b2420; --muted:#5b665f; --accent:#0e6b63; --line:#d6ddd8; --panel:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121715; --fg:#e6ebe7; --muted:#9aa59e; --accent:#5ccfc2; --line:#2a332e; --panel:#1a211d; }
+  }
+  body { margin:0; padding:32px 24px 64px; background:var(--bg); color:var(--fg); font:16px/1.55 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  main { max-width:1100px; margin:0 auto; display:grid; gap:44px; }
+  h1 { margin:0 0 8px; font-size:1.8rem; }
+  nav ol { margin:0; padding-left:1.2em; columns:2; }
+  a { color:var(--accent); }
+  section { display:grid; gap:10px; }
+  h2 { margin:0; font-size:1.3rem; }
+  .kind { margin:0; font:600 0.78rem/1 ui-monospace, Menlo, monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
+  .file, .ledger { margin:0; font:0.84rem ui-monospace, Menlo, monospace; color:var(--muted); }
+  .note { margin:0; max-width:70ch; color:var(--muted); }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px; overflow-x:auto; }
+  pre.mermaid { margin:0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>ubiqron diagram samples</h1>
+    <p class="note">Rendered from the six Markdown files in this folder. Edit the .md files, re-run the generator, reload.</p>
+    <nav><ol><li><a href="#CONTEXT-MAP">CONTEXT-MAP</a></li>
+<li><a href="#PlaceOrder.sequence">PlaceOrder.sequence</a></li>
+<li><a href="#Order.state">Order.state</a></li>
+<li><a href="#OrderPaymentProcess.flow">OrderPaymentProcess.flow</a></li>
+<li><a href="#Order.overview">Order.overview</a></li>
+<li><a href="#Order.timeline">Order.timeline</a></li></ol></nav>
+  </header>
+
+<section id="CONTEXT-MAP">
+  <p class="kind">graph LR</p>
+  <h2>Context map</h2>
+  <p class="file">CONTEXT-MAP.md</p>
+  <p class="note">Arrows point from upstream to downstream. Edge label: pattern short code and mechanism. External systems have a dashed border. Shared Kernel links are dotted.</p>
+  <div class="panel"><pre class="mermaid">graph LR
+    SK[&quot;SharedKernel: Money, MerchantId&quot;]
+    M[&quot;Merchant (Supporting)&quot;]
+    O[&quot;Order (Core)&quot;]
+    F[&quot;Fulfillment (Supporting)&quot;]
+    P[&quot;Payment Provider (External)&quot;]
+    M --&gt;|&quot;CS: MerchantRegistered&quot;| O
+    O --&gt;|&quot;CS: OrderPlaced&quot;| F
+    P --&gt;|&quot;ACL in Order.Infrastructure&quot;| O
+    SK -.-&gt;|SK| M
+    SK -.-&gt;|SK| O
+    SK -.-&gt;|SK| F
+    classDef external stroke-dasharray: 6 4
+    class P external
+</pre></div>
+  
+</section>
+<section id="PlaceOrder.sequence">
+  <p class="kind">sequenceDiagram</p>
+  <h2>PlaceOrder</h2>
+  <p class="file">PlaceOrder.sequence.md</p>
+  <p class="note">Command flow inside the Order context. Shows the repository port (U4), the port-free domain service (U5), the typed exception (U7) and the aggregate raising its event.</p>
+  <div class="panel"><pre class="mermaid">sequenceDiagram
+    participant Api
+    participant H as PlaceOrderHandler
+    participant MR as IMerchantRepository
+    participant S as OrderDomainService
+    participant O as Order
+    participant OR as IOrderRepository
+    Api-&gt;&gt;H: PlaceOrderCommand
+    H-&gt;&gt;MR: GetById(merchantId)
+    MR--&gt;&gt;H: merchant
+    H-&gt;&gt;O: Order.Create(...)
+    H-&gt;&gt;S: ProcessOrder(merchant, order)
+    alt merchant unavailable
+        S--&gt;&gt;H: MerchantUnavailableException
+        H--&gt;&gt;Api: rejected
+    else merchant available
+        S-&gt;&gt;O: Place()
+        Note over O: raises OrderPlaced
+        H-&gt;&gt;OR: Add(order)
+        H--&gt;&gt;Api: OrderId
+    end
+</pre></div>
+  <p class="ledger">Ledger: ord-0003</p>
+</section>
+<section id="Order.state">
+  <p class="kind">stateDiagram-v2</p>
+  <h2>Order lifecycle</h2>
+  <p class="file">Order.state.md</p>
+  <p class="note">Transition labels are the aggregate&#x27;s methods. Notes are the invariants that refuse a transition. A state with no transition for a method means that method is refused there.</p>
+  <div class="panel"><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; Placed : Place()
+    Placed --&gt; Rejected : Reject(reason)
+    Placed --&gt; Paid : MarkPaid()
+    Paid --&gt; Accepted : Accept()
+    Paid --&gt; Cancelled : Cancel()
+    Accepted --&gt; Delivered : Deliver()
+    Accepted --&gt; Cancelled : Cancel()
+    Delivered --&gt; [*]
+    Rejected --&gt; [*]
+    Cancelled --&gt; [*]
+    note right of Placed
+        ProcessOrder rejects when the merchant is unavailable
+    end note
+    note right of Delivered
+        Cancel is refused after Deliver
+    end note
+</pre></div>
+  <p class="ledger">Ledger: ord-0017</p>
+</section>
+<section id="OrderPaymentProcess.flow">
+  <p class="kind">flowchart TD</p>
+  <h2>OrderPaymentProcess</h2>
+  <p class="file">OrderPaymentProcess.flow.md</p>
+  <p class="note">Saga in `Order.Application/Processes/` (U12). It uses the `IPaymentGateway` port, which is the port of the anti-corruption layer towards the Payment Provider. Shows the compensation branch and the retry.</p>
+  <div class="panel"><pre class="mermaid">flowchart TD
+    A([OrderPlaced]) --&gt; B[&quot;Send AuthorizePayment through IPaymentGateway&quot;]
+    B --&gt; C{Result}
+    C --&gt;|PaymentAuthorized| D[&quot;Order.MarkPaid()&quot;]
+    D --&gt; E[&quot;Publish OrderPaid from Order.Contract&quot;]
+    E --&gt; F([Done])
+    C --&gt;|PaymentDeclined| G[&quot;Order.Reject(PaymentDeclined)&quot;]
+    G --&gt; H([Done])
+    C --&gt;|Timeout| I{&quot;Attempts below 3?&quot;}
+    I --&gt;|yes| B
+    I --&gt;|no| G
+</pre></div>
+  <p class="ledger">Ledger: ord-0021</p>
+</section>
+<section id="Order.overview">
+  <p class="kind">classDiagram</p>
+  <h2>Order context overview</h2>
+  <p class="file">Order.overview.md</p>
+  <p class="note">Stereotypes name the building block. Aggregates refer to each other by id only, so the Order to Merchant link is dashed.</p>
+  <div class="panel"><pre class="mermaid">classDiagram
+    class Order {
+        &lt;&lt;AggregateRoot&gt;&gt;
+        OrderId Id
+        MerchantId MerchantId
+        OrderStatus Status
+        Money Total
+        Place()
+        Reject(reason)
+        MarkPaid()
+        Accept()
+        Cancel()
+        Deliver()
+    }
+    class OrderLine {
+        &lt;&lt;Entity&gt;&gt;
+        ProductId ProductId
+        int Quantity
+        Money UnitPrice
+    }
+    class Money {
+        &lt;&lt;ValueObject&gt;&gt;
+        decimal Amount
+        string Currency
+    }
+    class Merchant {
+        &lt;&lt;AggregateRoot&gt;&gt;
+        MerchantId Id
+        bool IsAvailable
+        SetUnavailable()
+        SetAvailable()
+    }
+    class OrderDomainService {
+        &lt;&lt;DomainService&gt;&gt;
+        ProcessOrder(merchant, order)
+    }
+    class OrderPlaced {
+        &lt;&lt;DomainEvent&gt;&gt;
+        OrderId OrderId
+        MerchantId MerchantId
+    }
+    Order *-- OrderLine : lines
+    Order --&gt; Money : total
+    OrderLine --&gt; Money : unitPrice
+    Order ..&gt; Merchant : by MerchantId only
+    OrderDomainService ..&gt; Order
+    OrderDomainService ..&gt; Merchant
+    Order ..&gt; OrderPlaced : raises
+</pre></div>
+  <p class="ledger">Ledger: ord-0017</p>
+</section>
+<section id="Order.timeline">
+  <p class="kind">timeline</p>
+  <h2>History of the Order context</h2>
+  <p class="file">Order.timeline.md</p>
+  <p class="note">Generated from `Order.Domain/DOMAIN-HISTORY.jsonl` on request. Not stored in a real repo; this file exists only as a sample. The id in brackets is the ledger line.</p>
+  <div class="panel"><pre class="mermaid">timeline
+    title History of the Order context
+    2026-11-05 : TermIntroduced Restaurant (ord-0001)
+               : AggregateIntroduced Order (ord-0002)
+               : InvariantAdded Order is rejected when the restaurant is unavailable (ord-0003)
+    2026-11-06 : ContextRelationshipChanged Merchant to Order, Customer-Supplier (ord-0005)
+    2027-02-10 : TermRenamed Restaurant to Merchant (ord-0017)
+    2027-04-02 : AggregateDeprecated Shipment, moved to Fulfillment (ord-0042)
+</pre></div>
+  
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'loose' });
+</script>
+</body>
+</html>
