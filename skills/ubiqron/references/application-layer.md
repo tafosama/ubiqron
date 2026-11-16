@@ -17,6 +17,21 @@ Application/
   Processes/                sagas and process managers (U12)
 ```
 
+## Use cases in the ledger
+
+Every command, query, event handler and process is a use case. When one is added, changed or removed, write a ledger line and update the use-case table in the glossary (U13).
+
+| Type | `subject` | `to` |
+|------|-----------|------|
+| command | `PlaceOrder` | `command on Order, calls OrderDomainService.ProcessOrder, raises OrderPlaced` |
+| query | `GetOrderById` | `query on Order, returns OrderView` |
+| event handler | `CreateMerchant` | `event handler on Merchant, starts on MerchantRegistered, calls Merchant.Create` |
+| process | `OrderPaymentProcess` | `process, starts on OrderPlaced, sends MarkOrderPaid or CancelOrder` |
+
+- The subject is the use case name in business words. The command, the handler or a `...UseCase` class are named from it by the stack profile or by the developer's own convention. Class names are not recorded.
+- Added: `UseCaseIntroduced`. Changed, such as calling another method: a new `UseCaseIntroduced` line with `supersedes`. Removed: `UseCaseDeprecated`.
+- The question "which use cases or handlers does this context have" is answered from the use-case table, without reading code. Table format and the answer steps are in `references/glossary-and-ledger.md`.
+
 ## Command and command handler
 
 A command is the intent to change one aggregate: `PlaceOrder`, `CancelOrder`. One handler per command.

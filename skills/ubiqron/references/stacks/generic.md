@@ -63,6 +63,8 @@ When the build tool does not enforce boundaries, review mode reads imports:
 3. Each remaining import is a U1 finding. If it is an interface that an outer layer implements for I/O, report it as U3 instead.
 4. List every import under `src/<context>` that points into another context's folder. Each one that is not that context's `contract` is a U9 finding.
 
+For the use-case check (U13), list the commands, queries, event handlers and processes under `src/<context>/application`, by folder name or by class name, and compare the names with the use-case table in the glossary.
+
 Third-party packages inside `domain` are not a finding by default. Mention them once if they are I/O libraries such as an ORM or HTTP client.
 
 ## Naming
@@ -75,6 +77,7 @@ Follow the language.
 | Domain exception | One typed exception per business refusal. In a language without exceptions, one error type or variant per refusal, matched with the language's error matching. |
 | Domain event | Past tense: `OrderPlaced` |
 | Integration event | Past tense, lives in `contract` |
+| Use case name in the ledger | The command, query or handler name without a technical suffix: `place-order` or `PlaceOrderHandler` is `PlaceOrder` |
 | Repository port | Named after the aggregate, lives in `application/<aggregate>/ports` |
 | Tests | A plain English sentence in the framework's naming style |
 
@@ -102,7 +105,7 @@ test "order is rejected when merchant is unavailable":
 
 ## Ledger validation test
 
-Write it in the repo's test framework. It reads `DOMAIN-HISTORY.jsonl` by a path relative to the test file, parses each line as JSON and checks: required fields present; `kind` is one of the 13 kinds; `id` is unique and in order; `supersedes` points to an id in the same file; `at` is an ISO date. It does not check `related`; review mode does that across contexts.
+Write it in the repo's test framework. It reads `DOMAIN-HISTORY.jsonl` by a path relative to the test file, parses each line as JSON and checks: required fields present; `kind` is one of the 15 kinds; `id` is unique and in order; `supersedes` points to an id in the same file; `at` is an ISO date. It does not check `related`; review mode does that across contexts.
 
 ## Developer-choice options
 
