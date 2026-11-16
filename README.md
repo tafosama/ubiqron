@@ -80,3 +80,7 @@ The skill folder is self-contained. Nothing outside `skills/ubiqron/` is needed 
 ## Credits
 
 The lean `SKILL.md` plus `references/` structure, the three subdomain tests and the living-glossary table follow the `domain-driven-design` skill in [wondelai/skills](https://github.com/wondelai/skills), MIT licensed.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
