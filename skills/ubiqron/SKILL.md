@@ -1,6 +1,6 @@
 ---
 name: ubiqron
-description: Strategic and tactical Domain-Driven Design for codebases built with Clean Architecture and Hexagonal ports and adapters, in any language; stack details such as project names and test framework come from stack profiles (.NET first). Use when the user mentions "bounded context", "aggregate", "aggregate root", "domain service", "domain event", "invariant", "ubiquitous language", "glossary", "context map", "domain history", "DOMAIN-HISTORY.jsonl", or asks to create a new bounded context, review a context against DDD rules, move an aggregate between contexts, or record a domain change. Also use when scaffolding a context's Domain module and its test module in a monorepo. Keeps the glossary, the temporal ledger and the context map inside the codebase.
+description: Strategic and tactical Domain-Driven Design for codebases built with Clean Architecture and Hexagonal ports and adapters, in any language; stack details such as project names and test framework come from stack profiles (.NET first). Use when the user mentions "bounded context", "aggregate", "aggregate root", "domain service", "domain event", "invariant", "command handler", "query handler", "ubiquitous language", "glossary", "context map", "domain history", "DOMAIN-HISTORY.jsonl", or asks to create a new bounded context, review a context against DDD rules, list the use cases or handlers of a context, move an aggregate between contexts, or record a domain change. Also use when scaffolding a context's Domain module and its test module in a monorepo. Keeps the glossary, the use-case list, the temporal ledger and the context map inside the codebase.
 ---
 
 # ubiqron: Domain-Driven Design with the model kept in the codebase
@@ -17,7 +17,7 @@ Every modeling action updates these files. Code and model never drift apart.
 - No idioms. No filler words such as robust, leverage, seamlessly, comprehensive.
 - Answer with lists and tables. A paragraph has at most three sentences.
 - One phase per reply. Make a proposal, then stop and wait for the developer's choice.
-- Budgets: at most 7 aggregate candidates, 5 invariants per aggregate, 3 context relationships, 10 review findings per reply.
+- Budgets: at most 7 aggregate candidates, 5 invariants per aggregate, 7 use cases per aggregate, 3 context relationships, 10 review findings per reply.
 - Never write or change files before the developer selects. Then write only what was selected.
 - Ledger `reason` fields are one sentence. Glossary definitions are at most two sentences.
 
@@ -27,7 +27,7 @@ Every modeling action updates these files. Code and model never drift apart.
 |------|------|------|
 | New context | "Create a bounded context", "model the X context", "we need a new module for X" | [references/new-context-flow.md](references/new-context-flow.md) |
 | Review | "Review", "check", "audit" an existing context against the rules | [references/review-mode.md](references/review-mode.md) |
-| Maintain | Rename or deprecate a term, add or remove an invariant, add a method or event, move an aggregate, change a context relationship, answer "what did X mean on date D" | [references/glossary-and-ledger.md](references/glossary-and-ledger.md), [references/context-map.md](references/context-map.md) |
+| Maintain | Rename or deprecate a term, add or remove an invariant, add a method or event, add or remove a use case, move an aggregate, change a context relationship, answer "what did X mean on date D" or "which use cases and handlers does X have" | [references/glossary-and-ledger.md](references/glossary-and-ledger.md), [references/context-map.md](references/context-map.md) |
 | Draw | "Draw", "diagram", "sequence for X", "states of X", "show the history of X", "context map" | [references/diagrams.md](references/diagrams.md) |
 
 Pick the mode from the request. If the request fits none, ask one question to choose.
@@ -57,7 +57,7 @@ Each context also owns two files inside its Domain module:
 
 | File | Purpose |
 |------|---------|
-| `<Context>.Domain/UBIQUITOUS-LANGUAGE.md` | Current meaning of every term, aggregate, method and event in this context |
+| `<Context>.Domain/UBIQUITOUS-LANGUAGE.md` | Current meaning of every term, aggregate, method and event in this context, and the list of its use cases |
 | `<Context>.Domain/DOMAIN-HISTORY.jsonl` | Append-only history of every model change in this context |
 
 
@@ -79,7 +79,7 @@ These rules are fixed. Review mode reports a finding for each violation and cite
 | U10 | The published language holds integration events and the small DTO and ID types they carry. No aggregates, no entities, no behaviour. A domain event class holds domain data only; envelope fields such as eventId or occurredAt are added at the boundary. |
 | U11 | Shared Kernel is a separate small module with value objects only. Contract modules may reference it. |
 | U12 | Sagas and process managers live in Application, default folder `Application/Processes/`. They may use ports. They are not domain services. |
-| U13 | Every modeling action appends a ledger line. The glossary and the context map are projections of the ledger. |
+| U13 | Every modeling action appends a ledger line. Adding, changing or removing a use case is a modeling action; a use case is a command, a query, an event handler or a process. The glossary and the context map are projections of the ledger. |
 | U14 | Code does not use an item that the ledger marks deprecated. |
 | U15 | A stored diagram ends with the last ledger id it reflects. A diagram older than a later ledger line about its subject is reported as stale. Diagrams are projections; drawing one writes no ledger line. |
 
@@ -106,11 +106,14 @@ These are the developer's call. Ask once, record the answer as a `DecisionRecord
 
 Fields: `id, at, context, kind, subject, from?, to?, reason, ref?, supersedes?, related?`
 
-Kinds: `TermIntroduced, TermRenamed, TermDeprecated, AggregateIntroduced, AggregateDeprecated, InvariantAdded, InvariantRemoved, ResponsibilityMoved, MethodIntroduced, MethodDeprecated, EventIntroduced, ContextRelationshipChanged, DecisionRecorded`
+Kinds: `TermIntroduced, TermRenamed, TermDeprecated, AggregateIntroduced, AggregateDeprecated, InvariantAdded, InvariantRemoved, ResponsibilityMoved, MethodIntroduced, MethodDeprecated, EventIntroduced, UseCaseIntroduced, UseCaseDeprecated, ContextRelationshipChanged, DecisionRecorded`
 
 ```jsonl
 {"id":"ord-0003","at":"2026-11-06","context":"Order","kind":"InvariantAdded","subject":"OrderDomainService.ProcessOrder","to":"An order is rejected when the merchant is unavailable","reason":"Busy merchants can stop taking new orders"}
+{"id":"ord-0010","at":"2026-11-10","context":"Order","kind":"UseCaseIntroduced","subject":"PlaceOrder","to":"command on Order, calls OrderDomainService.ProcessOrder, raises OrderPlaced","reason":"Customers place orders from the app"}
 ```
+
+Use cases are in the ledger too. The glossary has a use-case table built from these lines. To answer "which use cases, command handlers or query handlers does this context have", read that table. Do not scan the code.
 
 Two-context operations write one line in each ledger, linked by `related` (`<Context>:<id>`). Moving `Shipment` from Order to Fulfillment is `AggregateDeprecated` in Order with `to: "Fulfillment"` and `AggregateIntroduced` in Fulfillment with `from: "Order"`. Compute both ids first, then write both lines.
 
@@ -143,8 +146,8 @@ A food-ordering platform with many merchants.
 | [references/strategic-design.md](references/strategic-design.md) | Bounded contexts, subdomain questions, the nine relationship patterns, published language |
 | [references/context-map.md](references/context-map.md) | `ubiqron/CONTEXT-MAP.md` template, pattern defaults, ledger link |
 | [references/tactical-patterns.md](references/tactical-patterns.md) | Aggregates, entities, value objects, domain services, domain events, domain exceptions, factories |
-| [references/application-layer.md](references/application-layer.md) | Command and query handlers, ports, processes, developer choices |
+| [references/application-layer.md](references/application-layer.md) | Command and query handlers, ports, processes, use cases in the ledger, developer choices |
 | [references/stacks/dotnet.md](references/stacks/dotnet.md) | .NET profile: project tree, csproj references, xUnit, scaffold commands, EF and library options |
 | [references/stacks/generic.md](references/stacks/generic.md) | Fallback profile for any other stack, plus the template for new profiles |
-| [references/glossary-and-ledger.md](references/glossary-and-ledger.md) | `UBIQUITOUS-LANGUAGE.md` format, ledger schema, kinds, dual-write, validation test |
+| [references/glossary-and-ledger.md](references/glossary-and-ledger.md) | `UBIQUITOUS-LANGUAGE.md` format with the use-case table, ledger schema, kinds, dual-write, validation test |
 | [references/diagrams.md](references/diagrams.md) | Six Mermaid diagram kinds, file layout, budgets, stale check, preview page |

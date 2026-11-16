@@ -6,15 +6,15 @@ ubiqron helps one developer create, review and evolve bounded contexts in a mono
 
 | File | What it holds |
 |------|---------------|
-| `<Context>.Domain/UBIQUITOUS-LANGUAGE.md` | The current meaning of every term, aggregate, method and event |
-| `<Context>.Domain/DOMAIN-HISTORY.jsonl` | An append-only history of every model change |
+| `<Context>.Domain/UBIQUITOUS-LANGUAGE.md` | The current meaning of every term, aggregate, method and event, and the list of use cases |
+| `<Context>.Domain/DOMAIN-HISTORY.jsonl` | An append-only history of every model change, use cases included |
 | `ubiqron/CONTEXT-MAP.md` at the root of your repo | Which contexts exist, who feeds whom, and where the contract lives |
 
 ## What it does
 
 - **New context.** Four short phases: scope, aggregates, behaviour and tests, scaffold. Each phase is a proposal the developer picks from. Nothing is written before the selection.
 - **Review.** Checks an existing context against fifteen fixed rules (U1 to U15) and returns a findings list. No score.
-- **Maintain.** Rename, deprecate, add a rule or a method, move an aggregate, change a relationship, answer "what did X mean on date D".
+- **Maintain.** Rename, deprecate, add a rule, a method or a use case, move an aggregate, change a relationship. Answer "what did X mean on date D" and "which use cases does Order have" from the files, without scanning the code.
 - **Draw.** Mermaid diagrams as projections of the code and the ledger: context map, sequence, state, flow, overview, timeline.
 
 Architecture: Clean Architecture with Hexagonal ports and adapters. Domain holds the model, Application owns the ports, Infrastructure and Api implement them. Contexts reference each other only through a published-language module.
@@ -62,7 +62,7 @@ skills/ubiqron/
     context-map.md             template of the context map and its ledger link
     tactical-patterns.md       aggregates, entities, value objects, events, services, exceptions, factories
     application-layer.md       handlers, ports, processes, publishing between contexts
-    glossary-and-ledger.md     glossary format, ledger schema, 13 kinds, dual-write, validation test
+    glossary-and-ledger.md     glossary and use-case table, ledger schema, 15 kinds, dual-write, validation test
     diagrams.md                six Mermaid kinds, budgets, stale check
     stacks/dotnet.md           .NET profile
     stacks/generic.md          fallback profile and the template for new profiles

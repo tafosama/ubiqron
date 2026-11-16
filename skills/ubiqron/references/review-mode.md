@@ -28,9 +28,11 @@ When the developer asks for the whole repo, review one context per reply, in con
 | U10 | Contract module; domain event classes | Contract holds an aggregate, an entity or a method with behaviour; a domain event class has envelope fields such as eventId, occurredAt or correlationId |
 | U11 | SharedKernel module | It holds an entity, an aggregate, a service, a port or a handler |
 | U12 | Sagas and process managers | One lives in Domain, or is written as a domain service |
-| U13 | Code names against the glossary and the ledger | An aggregate, method, event or exception in code has no glossary row; a glossary row has no ledger line; the glossary's last ledger id is older than the ledger's last line |
-| U14 | Deprecated subjects from the ledger | A deprecated aggregate, method, term or event is still referenced in code |
+| U13 | Code names against the glossary and the ledger | An aggregate, method, event or exception in code has no glossary row; a glossary row has no ledger line; a command, query, event handler or process in Application has no row in the use-case table; a use-case row has no code; the glossary's last ledger id is older than the ledger's last line |
+| U14 | Deprecated subjects from the ledger | A deprecated aggregate, method, term or event is still referenced in code; the code of a deprecated use case still exists |
 | U15 | `Diagrams/*.md` | A diagram's `Ledger:` id is older than a ledger line about its subject (procedure in `references/diagrams.md`) |
+
+Use cases missing from the table are one finding per context, not one per handler: the count and the first three names. The fix writes one `UseCaseIntroduced` line per missing use case and rebuilds the table. This is how an existing codebase gets its first use-case table. The stack profile says how to list handlers.
 
 Two checks cross the context boundary:
 
@@ -56,14 +58,15 @@ These are developer choices (SKILL.md). Never report them.
 One row per finding. Order: boundaries first (U1, U9, U11), then Domain purity (U2, U3, U5, U7, U10), then structure (U4, U6, U8, U12), then model files (U13, U14, U15, cross checks).
 
 ```
-Review of Order context: 4 findings.
+Review of Order context: 5 findings.
 
 | # | Rule | Where | What | Fix |
 |---|------|-------|------|-----|
 | 1 | U9 | Order.Application module reference | References Merchant.Domain | Reference Merchant.Contract and translate MerchantRegistered |
 | 2 | U3 | Order.Domain/Services/OrderSearchPort | Interface implemented in Order.Infrastructure | Move it to Order.Application/Order/Ports/ |
 | 3 | U7 | Order.Domain/Order/Order, line 41 | Throws a general exception with code "ORD_EMPTY" | Add EmptyOrderException |
-| 4 | U15 | Order.Domain/Diagrams/Order.state.md | Ledger: ord-0017; newer lines ord-0019, ord-0021 | Redraw the state diagram |
+| 4 | U13 | Order.Application | 6 use cases have no row: CancelOrder, GetOrderById, RefundOrder and 3 more | Write 6 UseCaseIntroduced lines and rebuild the use-case table |
+| 5 | U15 | Order.Domain/Diagrams/Order.state.md | Ledger: ord-0017; newer lines ord-0019, ord-0021 | Redraw the state diagram |
 
 Reply with the numbers to fix.
 ```
@@ -72,12 +75,12 @@ Reply with the numbers to fix.
 - What: one sentence.
 - Fix: one sentence, no code.
 - More than 10 findings: last line "6 more findings. Say next to see them."
-- No findings: "Review of Order context: no findings." plus one line with what was checked: modules, interfaces, throw statements, ledger lines, diagrams.
+- No findings: "Review of Order context: no findings." plus one line with what was checked: modules, interfaces, throw statements, use cases, ledger lines, diagrams.
 
 ## After the selection
 
 1. Make the picked fixes, one commit-sized change per finding.
-2. Write a ledger line for each fix that changes the model: a new glossary row is `TermIntroduced`, `AggregateIntroduced`, `MethodIntroduced` or `EventIntroduced`; a removed deprecated use writes nothing; a moved port writes nothing.
+2. Write a ledger line for each fix that changes the model: a new glossary row is `TermIntroduced`, `AggregateIntroduced`, `MethodIntroduced` or `EventIntroduced`; a new use-case row is `UseCaseIntroduced`; a removed deprecated use writes nothing; a moved port writes nothing.
 3. Rebuild the glossary rows that changed. Redraw a picked stale diagram and update its `Ledger:` line.
 4. Run the build or the tests once, as the stack profile says.
 5. Reply with a table: finding number, file changed, ledger id or "no ledger line", and one line with the build result.

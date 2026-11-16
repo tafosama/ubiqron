@@ -95,7 +95,15 @@ Other checks in review mode:
 | U5 | Constructor and method parameters of classes under `Domain/Services`. A parameter whose type is an interface declared outside Domain is a port. |
 | U7 | `throw new Exception(`, `throw new InvalidOperationException(` or `throw new DomainException(new` inside Domain. |
 | U8 | A query handler that calls a `DbContext` directly is fine only if the developer chose that; it is never a finding. A command handler with no unit of work is not a finding either. |
+| U13 | List the use cases in code with the command below the table and compare the names with the use-case table in the glossary. |
 | U14 | Grep for each deprecated subject from the ledger across `src/<Context>`. |
+
+Use cases in code, for U13. The output is one use case name per line:
+
+```bash
+grep -rhoE 'class [A-Za-z0-9_]+(Handler|UseCase|Process)\b' src/<Context>/<Context>.Application --include='*.cs' \
+  | sed -E 's/^class //; s/(Handler|UseCase)$//' | sort -u
+```
 
 ## Naming
 
@@ -108,6 +116,7 @@ Other checks in review mode:
 | Integration event | past tense, in `.Contract/Events` | `MerchantRegistered` |
 | Command and handler | `<Verb><Aggregate>Command`, `<Verb><Aggregate>Handler` | `PlaceOrderCommand`, `PlaceOrderHandler` |
 | Query and handler | `<Get...>Query`, `<Get...>Handler` | `GetOrderByIdQuery`, `GetOrderByIdHandler` |
+| Use case name in the ledger | The command, query or handler class name without `Command`, `Query`, `Handler` or `UseCase` | `PlaceOrderCommand` and `PlaceOrderHandler` are `PlaceOrder`; `CreateOrderUseCase` is `CreateOrder` |
 | Repository port | `I<Aggregate>Repository` in `Application/<Aggregate>/Ports/` | `IOrderRepository` |
 | Test method | plain English with underscores | `Order_is_rejected_when_merchant_is_unavailable` |
 
@@ -174,7 +183,7 @@ Link the ledger file into the test project so the test reads the real file:
 </ItemGroup>
 ```
 
-`DomainHistoryTests` checks, per line: valid JSON; required fields present; `kind` is one of the 13 kinds; `id` is unique and in order; `supersedes` points to an id in the same file; `at` is an ISO date. It does not check `related`; review mode does that across contexts. The test body is in `references/glossary-and-ledger.md`.
+`DomainHistoryTests` checks, per line: valid JSON; required fields present; `kind` is one of the 15 kinds; `id` is unique and in order; `supersedes` points to an id in the same file; `at` is an ISO date. It does not check `related`; review mode does that across contexts. The test body is in `references/glossary-and-ledger.md`.
 
 ## Developer-choice options in .NET
 

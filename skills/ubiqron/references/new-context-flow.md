@@ -92,20 +92,30 @@ Wait for the selection.
 
 Ask once: "Create Domain and its tests now. Also Application, Infrastructure or Contract?" Default: Domain and tests only.
 
+When the developer adds Application, list the use cases first and wait for the selection. Propose one command per selected method that a caller starts and one query per root. At most seven per aggregate.
+
+```
+Use cases for Order (keep, drop or add):
+1. PlaceOrder     command  -> OrderDomainService.ProcessOrder, raises OrderPlaced
+2. CancelOrder    command  -> Order.Cancel
+3. GetOrderById   query    -> returns OrderView
+```
+
 Write, in this order, using the stack profile for names and commands:
 
 1. The Domain module and the Domain test module.
 2. One class per selected aggregate root with the selected methods as stubs that fail when called, one comment per invariant above the method that keeps it, one class per typed exception, one class per domain event, the value objects named in phases 2 and 3, the domain service with its signature.
 3. One failing test per selected test case, named with the plain English sentence.
-4. `UBIQUITOUS-LANGUAGE.md` with one row per aggregate, method, event, exception and value object. Format in `references/glossary-and-ledger.md`.
-5. `DOMAIN-HISTORY.jsonl` with the first lines: `DecisionRecorded` for the subdomain type, the stack and every developer choice made; `AggregateIntroduced` per root; `MethodIntroduced` per method; `InvariantAdded` per invariant; `EventIntroduced` per event; `ContextRelationshipChanged` per neighbour, written in both ledgers with `related`.
-6. `ubiqron/CONTEXT-MAP.md`: add the context row and the relationship rows. Create the file if it does not exist. Format in `references/context-map.md`.
-7. `Diagrams/<Aggregate>.state.md` if the developer said yes in phase 3.
-8. Run the build or the tests once, as the stack profile says.
+4. The Application module, only when selected: one command or query and one handler stub per selected use case, one repository port per root. A handler stub fails when called.
+5. `UBIQUITOUS-LANGUAGE.md` with one row per aggregate, method, event, exception and value object, and one row per selected use case in the use-case table. Format in `references/glossary-and-ledger.md`.
+6. `DOMAIN-HISTORY.jsonl` with the first lines: `DecisionRecorded` for the subdomain type, the stack and every developer choice made; `AggregateIntroduced` per root; `MethodIntroduced` per method; `InvariantAdded` per invariant; `EventIntroduced` per event; `UseCaseIntroduced` per selected use case; `ContextRelationshipChanged` per neighbour, written in both ledgers with `related`.
+7. `ubiqron/CONTEXT-MAP.md`: add the context row and the relationship rows. Create the file if it does not exist. Format in `references/context-map.md`.
+8. `Diagrams/<Aggregate>.state.md` if the developer said yes in phase 3.
+9. Run the build or the tests once, as the stack profile says.
 
 Reply format: a table of files written with one count per file (classes, tests, rows, lines), one line with the build result, at most three "next" suggestions.
 
 ## Budgets
 
-- One phase per reply. Five questions in phase 1. Seven aggregates. Seven methods and five invariants per aggregate. Three aggregates per phase-3 reply. Three relationships.
+- One phase per reply. Five questions in phase 1. Seven aggregates. Seven methods, five invariants and seven use cases per aggregate. Three aggregates per phase-3 reply. Three relationships.
 - Never paste document content. Never write before the developer selects. Never scaffold Application, Infrastructure, Api or Contract without the phase-4 answer.
